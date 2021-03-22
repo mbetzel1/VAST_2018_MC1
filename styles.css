@@ -3,11 +3,9 @@
 	box-shadow: 0 0 5px #000000;
 	color: #333;
 	font-size: 20px;
-	left: 130px;
 	padding: 10px;
-	position: absolute;
+    position: absolute;
 	text-align: center;
-	top: 95px;
 	z-index: 10;
 	display: block;
 	opacity: 0;
@@ -20,8 +18,8 @@ b {
 }
 .grid-container {
     display: grid;
-    grid-template-columns: auto;
-    padding: 10px;
+    grid-template-rows: 40, 800, 40;
+    grid-gap: 5px;
 }
 .lines {
     stroke-width: 2;
@@ -31,4 +29,21 @@ b {
 }
 .grid-row {
     grid-column: 1 / span 1;
+    border-radius: 10px;
+}
+.grid-row-button {
+    grid-column: 1 / span 1;
+    border-radius: 10px;
+    margin: 0;
+    top: 50%;
+    left: 50%;
+}
+.svg-container {
+    grid-row-start: 1;
+    grid-row-end: 40;
+    grid-column: 2 / span 10;
+}
+.axis {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 100px;
 }
