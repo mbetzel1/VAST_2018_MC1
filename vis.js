@@ -7,19 +7,24 @@
 */
 
 
+//slider: https://bl.ocks.org/linoba/ecfc96ae52d5f8b8a7435ee5ab49635a
+
 //set margin and size variables
 var margin = {top: 30, right: 30, bottom: 30, left: 30},
     width = 800 - margin.left - margin.right,
     height = 800 - margin.top - margin.bottom;
 
 //margins and dimensions for the slider svg
-var slider_margin = {top: 0, right: 30, bottom: 0, left: 50},
+var slider_margin = {top: 0, right: 30, bottom: 0, left: 30},
     slider_width = 800 - margin.left - margin.right,
     slider_height = 150 - margin.top - margin.bottom;
 
 //start and end dates for sliders
 var startDate = new Date("1985-01-01")
     endDate = new Date("2018-12-31");
+
+//list for checkboxes
+var choices = [];
 
 //create my scales and date formatters/parsers
 var x = d3.scaleLinear().domain([0, 200]).range([0, width]);
@@ -71,7 +76,8 @@ start_slider.append("line")
     .attr("class", "track-overlay")
     .call(d3.drag()
         .on("start.interrupt", function() { start_slider.interrupt(); })
-        .on("start drag", function(event) { hue(z.invert(event.x)); }));
+        //.on("start drag", function(event) { hue(z.invert(event.x)); }));
+        .on("start drag", function(event) { filter_dates(z.invert(event.x)); }));
 
 //sets the tick marks for the slider
 start_slider.insert("g", ".track-overlay")
@@ -98,14 +104,29 @@ var handle = start_slider.insert("circle", ".track-overlay")
     .attr("class", "handle")
     .attr("r", 9);
 
-//function called when slider moves
-function hue(h) {
+function filter_dates(date) {
+    handle.attr("cx", z(date));
+    label
+        .attr("x", z(date))
+        .text(formatDate(date));
+    svg.selectAll("circle")
+        .filter(d=> d.checked)
+        .attr("visibility", function(d) {
+            if (d.date > date) {
+                return "visible"
+            } else {
+                return "hidden"
+            }
+        })
+} 
+//function called when slider moves - change to filter data
+/* function hue(h) {
     handle.attr("cx", z(h));
     label
         .attr("x", z(h))
         .text(formatDate(h));
     slider_svg.style("background-color", d3.hsl(h/1000000000, 0.8, 0.8));
-    }
+    } */
 
 //draw map
 var image = svg.append("image")
@@ -151,13 +172,44 @@ svg.append("rect")
 .attr("class", "image-border")
 
 //draw everything once page is loaded
-update();
+draw_chart();
+function update() {
+    d3.selectAll(".myCheckbox").each(function(d){
+        cb = d3.select(this);
+        if(cb.property("checked")){
+          choices.push(cb.property("value"));
+        }
+        else if(!cb.property("checked")) {
+            choices = choices.filter(item => item !== cb.property("value"))
+        }
+      });
+
+    //turns non-checked circles hidden
+    svg.selectAll("circle")
+        .attr("visibility", function(d) {
+            if (choices.includes(d.type)) {
+                console.log(d.date)
+                d.checked = true;
+                if (d.date > z.invert(handle.attr('cx')))
+                {
+                    return "visible";
+                }
+                else {
+                    return "hidden";
+                }
+            }
+            else {
+                d.checked = false;
+                return "hidden";
+            }
+        })
+}
 
 //get data and update svg with circles
 //also handles functionality of data
-function update() {
+function draw_chart() {    
     svg.selectAll("circle").remove()
-    var choices = [];
+    
     //create a list of checked choices
     d3.selectAll(".myCheckbox").each(function(d){
       cb = d3.select(this);
@@ -189,13 +241,13 @@ function update() {
     //load data
     d3.csv("Cleaned_All_Birds_V2.csv").then(data => {
         data.forEach(d => {
-            //potentially convert Datetime to a javascript time format
             d.textdate = d.Datetime;
             d.type = d.English_name;
             d.x = +d.X;
             d.y = +d.Y;
             d.id = +d.ID;
             d.date = parseDate(d.Datetime);
+            d.checked = false
         });
         //add rect for gridlines from point
         var lines = svg.append("rect")
@@ -210,7 +262,15 @@ function update() {
         svg.selectAll("dot")
             .data(data)
             .enter().append("circle")
-            .filter(d => {return choices.includes(d.type)})
+            //.filter(d => {return choices.includes(d.type)})
+            .attr("visibility", function(d) {
+                if (choices.includes(d.type)) {
+                    return "visible";
+                }
+                else {
+                    return "hidden";
+                }
+            })
             //circle size
             .attr("r", 5)
             //x coordinate
@@ -238,109 +298,47 @@ function update() {
                 //show tooltip
                 tooltip
                     .style("opacity", 0.8);
-        })
+            })
 
-        //when the mousemoves
-        .on('mousemove', function(event, d) {
-            //change tooltip text and tooltip position
-            tooltip
-                .style("left", (d3.pointer(event)[0] + 400) + "px")
-                .style("top", (d3.pointer(event)[1] + 20) + "px");
-            tooltip
-                .select('.type')
-                .html('<b>Type: ' + d.type +'</b>');
-            tooltip
-                .select('.date')
-                .html('<b>Date: ' + d.textdate +'</b>');
-            tooltip
-                .select('.coords')
-                .html('<b>Coordinates: X: ' + d.x + ', Y: ' + d.y + '</b>')
-        })
-        //on mouse off, get rid of tooltip and gridlines
-        .on('mouseout', function () {
-            d3.select(this).transition()
-                .duration('200')
-                .attr("stroke-width", 1);
-            //makes div disappear
-            svg.selectAll('rect.lines').remove();
-            tooltip
-                .style("opacity", 0);
-            
-        })
-        .on('click', function(event, d) {
-            alert(d.type + " " + d.id)
-        });
+            //when the mousemoves
+            .on('mousemove', function(event, d) {
+                //change tooltip text and tooltip position
+                tooltip
+                    .style("left", (d3.pointer(event)[0] + 400) + "px")
+                    .style("top", (d3.pointer(event)[1] + 20) + "px");
+                tooltip
+                    .select('.type')
+                    .html('<b>Type: ' + d.type +'</b>');
+                tooltip
+                    .select('.date')
+                    .html('<b>Date: ' + d.textdate +'</b>');
+                tooltip
+                    .select('.coords')
+                    .html('<b>Coordinates: X: ' + d.x + ', Y: ' + d.y + '</b>')
+            })
+            //on mouse off, get rid of tooltip and gridlines
+            .on('mouseout', function () {
+                d3.select(this).transition()
+                    .duration('200')
+                    .attr("stroke-width", 1);
+                //makes div disappear
+                svg.selectAll('rect.lines').remove();
+                tooltip
+                    .style("opacity", 0);
+                
+            })
+            .on('click', function(event, d) {
+                alert(d.type + " " + d.id)
+            });
 
 
     
-    });
+        });
 }
 
 
-//colors the circles by bird type
-function color_by_type(type) {
-    if (type === "Bent-beak Riffraff") {
-        return "#FFFAB6";
-    }
-    else if (type === "Bombadil") {
-        return "LightSalmon"
-    }
-    else if (type === "Blue-collared Zipper") {
-        return "rgb(128, 170, 184)";
-    }
-    else if (type === "Broad-winged Jojo") {
-        return "#92f294";
-    }
-    else if (type === "Canadian Cootamum") {
-        return "rgb(49, 129, 129)"
-    }
-    else if (type === "Carries Champagne Pipit") {
-        return "#be9cd4"
-    }
-    else if (type === "Darkwing Sparrow") {
-        return "#478a52"
-    }
-    else if (type === "Eastern Corn Skeet") {
-        return "rgb(255, 299, 80)"
-    }
-    else if (type === "Green-tipped Scarlet Pipit") {
-        return "#64E987"
-    }
-    else if (type === "Lesser Birchbeere") {
-        return "#FCCCCC"
-    }
-    else if (type === "Orange Pine Plover") {
-        return "rgb(253, 160, 46)"
-    }
-    else if (type === "Ordinary Snape") {
-        return "#C0F9FA"
-    }
-    else if (type === "Pinkfinch") {
-        return "#F388C6"
-    }
-    else if (type === "Purple Tooting Tout") {
-        return "rgb(151, 54, 151)"
-    }
-    else if (type === "Qax") {
-        return "#5f5882"
-    }
-    else if (type === "Queenscoat") {
-        return "Turquoise"
-    }
-    else if (type === "Scrawny Jay") {
-        return "rgb(149, 149, 255)"
-    }
-    else if (type === "Vermillion Trillian") {
-        return "rgb(204, 255, 65)"
-    }
-    else if (type === "Rose-crested Blue Pipit") {
-        return "#ee0000"
-    }
-    else{
-        return "Black"
-    }
-};
-update
+
+
 function selectCBs() {
     d3.selectAll('.myCheckbox')
         .property('checked', true);
