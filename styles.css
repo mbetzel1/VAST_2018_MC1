@@ -30,6 +30,7 @@ b {
 .grid-row {
     grid-column: 1 / span 1;
     border-radius: 10px;
+    box-shadow: 2px 1px #888888;
 }
 .grid-row-button {
     grid-column: 1 / span 1;
@@ -37,13 +38,55 @@ b {
     margin: 0;
     top: 50%;
     left: 50%;
+    box-shadow: 1px 1px #888888;
 }
 .svg-container {
     grid-row-start: 1;
-    grid-row-end: 40;
-    grid-column: 2 / span 10;
+    grid-row-end: 30;
+    grid-column: 2 / span 5;
 }
 .axis {
     font-family: 'Times New Roman', Times, serif;
     font-size: 100px;
 }
+.slider-container {
+    grid-row: 31;
+    grid-column: 2 / span 4;
+    border-radius: 10px;
+    margin: 0;
+    line-height: 100px;
+}
+.ticks {
+    font-size: 10px;
+  }
+
+  .track,
+  .track-inset,
+  .track-overlay {
+    stroke-linecap: round;
+  }
+
+  .track {
+    stroke: #000;
+    stroke-opacity: 0.3;
+    stroke-width: 10px;
+  }
+
+  .track-inset {
+    stroke: #ddd;
+    stroke-width: 8px;
+  }
+
+  .track-overlay {
+    pointer-events: stroke;
+    stroke-width: 50px;
+    stroke: transparent;
+    cursor: crosshair;
+  }
+
+  .handle {
+    fill: #fff;
+    stroke: #000;
+    stroke-opacity: 0.5;
+    stroke-width: 1.25px;
+  }
